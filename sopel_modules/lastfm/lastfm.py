@@ -8,13 +8,14 @@ import random
 import textwrap
 
 import sopel.module
-from sopel.config.types import StaticSection, ValidatedAttribute
+from sopel.config.types import ChoiceAttribute, StaticSection, ValidatedAttribute
 import sopel.db
 import requests
 
 
 class LastfmSection(StaticSection):
     api = ValidatedAttribute('api')
+    name = ChoiceAttribute('name', ['nick', 'user'], default='user')
 
 
 def setup(bot):
@@ -24,6 +25,7 @@ def setup(bot):
 def configure(config):
     config.define_section('lastfm', LastfmSection, validate=False)
     config.lastfm.configure_setting('api', 'Enter last.fm api: ')
+    config.lastfm.configure_setting('name', 'Choose name type to display in output: ')
 
 
 class NoUserSetException(Exception):
@@ -100,7 +102,11 @@ def fm(bot, trigger):
 
     action = get_action(last_track)
 
-    out = format_song_output(user, action, last_track['artist']['#text'],
+    name = user
+    if bot.config.lastfm.name == 'nick' and not trigger.group(2):
+        name = trigger.nick
+
+    out = format_song_output(name, action, last_track['artist']['#text'],
                              last_track['name'], last_track['album']['#text'])
 
     bot.say(out)
